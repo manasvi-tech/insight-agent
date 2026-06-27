@@ -14,6 +14,7 @@ embedding_fn = OpenAIEmbeddingFunction(
     api_type="azure",
     api_version=AZURE_API_VERSION,
     model_name=EMBEDDING_DEPLOYMENT,
+    deployment_id=EMBEDDING_DEPLOYMENT,
 )
 
 chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
@@ -24,7 +25,7 @@ collection = chroma_client.get_or_create_collection(
 )
 
 
-def search_documents(query: str, n_results: int = 3) -> list[dict]:
+def search_documents(query: str, n_results: int = 5) -> list[dict]:
     results = collection.query(
         query_texts=[query],
         n_results=n_results,

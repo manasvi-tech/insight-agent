@@ -52,8 +52,11 @@ def run_tool(name: str, arguments: dict) -> tuple[str, dict]:
         context = "\n\n".join(
             f"[{c['source']} page {c['page']}]: {c['text']}" for c in chunks
         )
-        sources = list({c["source"] for c in chunks})
-        return context, {"sources": sources}
+        seen = []
+        for c in chunks:
+            if c["source"] not in seen:
+                seen.append(c["source"])
+        return context, {"sources": seen}
 
     if name == "query_orders":
         result = query_orders(arguments["question"])
@@ -94,8 +97,12 @@ def run_agent(question: str, messages: list[dict]) -> Generator[dict, None, None
             context, metadata = run_tool(name, arguments)
 
             if name == "search_documents":
-                for source in metadata.get("sources", []):
-                    yield {"type": "citation", "source": source}
+                sources = metadata.get("sources", [])
+                yielded = []
+                for source in sources[:2]:
+                    if source not in yielded:
+                        yield {"type": "citation", "source": source}
+                        yielded.append(source)
 
             if name == "query_orders" and metadata.get("sql"):
                 yield {"type": "sql", "query": metadata["sql"]}

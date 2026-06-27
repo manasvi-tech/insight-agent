@@ -23,6 +23,7 @@ embedding_fn = OpenAIEmbeddingFunction(
     api_type="azure",
     api_version=AZURE_API_VERSION,
     model_name=EMBEDDING_DEPLOYMENT,
+    deployment_id=EMBEDDING_DEPLOYMENT,
 )
 
 

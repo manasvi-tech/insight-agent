@@ -39,4 +39,12 @@ async def chat(request: ChatRequest):
         except Exception as e:
             yield sse(SSEEvent(type="error", message=str(e)))
 
-    return StreamingResponse(generate(), media_type="text/event-stream")
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        }
+    )
