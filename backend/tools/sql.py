@@ -1,8 +1,6 @@
 import sqlite3
 import json
 from config import chat_client, CHAT_DEPLOYMENT
-from prompts import SYSTEM_PROMPT
-
 DB_PATH = "./data/orders.db"
 
 SCHEMA = """

@@ -4,7 +4,7 @@ os.environ["ANONYMIZED_TELEMETRY"] = "False"
 
 from typing import Generator
 from config import chat_client, CHAT_DEPLOYMENT
-from prompts import SYSTEM_PROMPT, TOOL_SEARCH_DESCRIPTION, TOOL_SQL_DESCRIPTION
+from prompts import get_system_prompt, TOOL_SEARCH_DESCRIPTION, TOOL_SQL_DESCRIPTION
 from tools.rag import search_documents
 from tools.sql import query_orders
 
@@ -68,12 +68,17 @@ def run_tool(name: str, arguments: dict) -> tuple[str, dict]:
 
 def run_agent(question: str, messages: list[dict]) -> Generator[dict, None, None]:
     conversation = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": get_system_prompt()},
         *messages,
         {"role": "user", "content": question},
     ]
 
-    while True:
+    max_iterations = 2
+    iteration = 0
+
+    while iteration < max_iterations:
+        iteration += 1
+
         response = chat_client.chat.completions.create(
             model=CHAT_DEPLOYMENT,
             messages=conversation,
@@ -98,11 +103,8 @@ def run_agent(question: str, messages: list[dict]) -> Generator[dict, None, None
 
             if name == "search_documents":
                 sources = metadata.get("sources", [])
-                yielded = []
-                for source in sources[:2]:
-                    if source not in yielded:
-                        yield {"type": "citation", "source": source}
-                        yielded.append(source)
+                if sources:
+                    yield {"type": "citation", "source": sources[0]}
 
             if name == "query_orders" and metadata.get("sql"):
                 yield {"type": "sql", "query": metadata["sql"]}
