@@ -2,6 +2,9 @@ import json
 import os
 os.environ["ANONYMIZED_TELEMETRY"] = "False"
 
+import time
+from logger import logger
+
 from typing import Generator
 from config import chat_client, CHAT_DEPLOYMENT
 from prompts import get_system_prompt, TOOL_SEARCH_DESCRIPTION, TOOL_SQL_DESCRIPTION
@@ -99,7 +102,10 @@ def run_agent(question: str, messages: list[dict]) -> Generator[dict, None, None
 
             yield {"type": "tool_used", "tool": name}
 
+            tool_start = time.time()
             context, metadata = run_tool(name, arguments)
+            tool_duration = round(time.time() - tool_start, 2)
+            logger.info(f"TOOL COMPLETE | {name} | {tool_duration}s")
 
             if name == "search_documents":
                 sources = metadata.get("sources", [])
@@ -107,6 +113,7 @@ def run_agent(question: str, messages: list[dict]) -> Generator[dict, None, None
                     yield {"type": "citation", "source": sources[0]}
 
             if name == "query_orders" and metadata.get("sql"):
+                logger.info(f"SQL | {metadata['sql']}")
                 yield {"type": "sql", "query": metadata["sql"]}
 
             conversation.append({

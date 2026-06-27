@@ -40,10 +40,18 @@ export default function Home() {
       setMessages((prev) => [...prev, userMessage, assistantMessage])
       setIsStreaming(true)
 
-      const history = messages.map((m) => ({
-        role: m.role,
-        content: m.content,
-      }))
+      const history = (() => {
+        const allMessages = messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        }))
+        
+        if (allMessages.length <= 6) return allMessages
+        
+        const first2 = allMessages.slice(0, 2)
+        const last4 = allMessages.slice(-4)
+        return [...first2, ...last4]
+      })()
 
       try {
         for await (const event of streamChat(question, history)) {

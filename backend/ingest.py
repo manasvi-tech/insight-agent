@@ -39,8 +39,11 @@ def chunk_text(text: str, size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP) 
 
 
 def ingest_documents():
-    print("Ingesting documents into Chroma...")
     chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
+    try:
+        chroma_client.delete_collection(name=COLLECTION_NAME)
+    except Exception:
+        pass
     collection = chroma_client.get_or_create_collection(
         name=COLLECTION_NAME,
         embedding_function=embedding_fn,
