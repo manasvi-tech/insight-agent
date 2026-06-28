@@ -6,8 +6,8 @@ A LLM-powered chatbot that answers questions over a company knowledge base using
 
 ## Live Demo
 
-Frontend: (add Vercel URL here)
-Backend: (add Railway URL here)
+Frontend: https://insight-agent-er3j8ng04-manasvi-techs-projects.vercel.app/
+Backend: https://insight-agent-production-6d6e.up.railway.app
 
 ---
 
