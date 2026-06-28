@@ -1,15 +1,16 @@
-import { SSEEvent, SSEEventType } from "@/types"
+import { SSEEvent } from "@/types"
 
 export async function* streamChat(
   question: string,
-  messages: { role: string; content: string }[]
+  messages: { role: string; content: string }[],
+  conversationId?: number | null
 ): AsyncGenerator<SSEEvent> {
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
 
   const response = await fetch(`${backendUrl}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question, messages }),
+    body: JSON.stringify({ question, messages, conversation_id: conversationId }),
   })
 
   if (!response.ok) {

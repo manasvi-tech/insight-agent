@@ -3,13 +3,17 @@
 import { useState, useCallback } from "react"
 import { Message } from "@/types"
 import { streamChat, stripInlineSource, toolLabel } from "@/lib/stream"
+import { createConversation, fetchMessages, Conversation } from "@/lib/api"
 import TopBar from "@/components/TopBar"
 import ChatWindow from "@/components/ChatWindow"
 import InputBar from "@/components/InputBar"
+import Sidebar from "@/components/Sidebar"
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
+  const [conversationId, setConversationId] = useState<number | null>(null)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   function updateLastMessage(updater: (msg: Message) => Message) {
     setMessages((prev) => {
@@ -19,9 +23,41 @@ export default function Home() {
     })
   }
 
+  function handleNewChat() {
+    setMessages([])
+    setConversationId(null)
+  }
+
+  async function handleSelectConversation(conversation: Conversation) {
+    setConversationId(conversation.id)
+    const msgs = await fetchMessages(conversation.id)
+    setMessages(
+      msgs.map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+        thinkingSteps: [],
+        citations: [],
+        sqlQueries: [],
+        sqlResults: [],
+        isStreaming: false,
+      }))
+    )
+  }
+
   const handleSend = useCallback(
     async (question: string) => {
       if (isStreaming) return
+
+      let currentConversationId = conversationId
+
+      if (!currentConversationId) {
+        const conversation = await createConversation(question)
+        if (conversation) {
+          currentConversationId = conversation.id
+          setConversationId(conversation.id)
+          setRefreshTrigger((prev) => prev + 1)
+        }
+      }
 
       const userMessage: Message = {
         role: "user",
@@ -34,6 +70,7 @@ export default function Home() {
         thinkingSteps: [],
         citations: [],
         sqlQueries: [],
+        sqlResults: [],
         isStreaming: true,
       }
 
@@ -45,27 +82,21 @@ export default function Home() {
           role: m.role,
           content: m.content,
         }))
-        
         if (allMessages.length <= 6) return allMessages
-        
         const first2 = allMessages.slice(0, 2)
         const last4 = allMessages.slice(-4)
         return [...first2, ...last4]
       })()
 
       try {
-        for await (const event of streamChat(question, history)) {
+        for await (const event of streamChat(question, history, currentConversationId)) {
           if (event.type === "tool_used" && event.tool) {
             const tool = event.tool as "search_documents" | "query_orders"
             updateLastMessage((msg) => ({
               ...msg,
               thinkingSteps: [
                 ...(msg.thinkingSteps ?? []),
-                {
-                  tool: tool,
-                  label: toolLabel(tool),
-                  done: false,
-                },
+                { tool, label: toolLabel(tool), done: false },
               ],
             }))
 
@@ -140,14 +171,24 @@ export default function Home() {
         setIsStreaming(false)
       }
     },
-    [messages, isStreaming]
+    [messages, isStreaming, conversationId]
   )
 
   return (
     <div className="flex flex-col h-screen bg-[#F7F5F3]">
       <TopBar />
-      <ChatWindow messages={messages} />
-      <InputBar onSend={handleSend} disabled={isStreaming} />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar
+          currentId={conversationId}
+          onSelect={handleSelectConversation}
+          onNewChat={handleNewChat}
+          refreshTrigger={refreshTrigger}
+        />
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <ChatWindow messages={messages} />
+          <InputBar onSend={handleSend} disabled={isStreaming} />
+        </div>
+      </div>
     </div>
   )
 }
