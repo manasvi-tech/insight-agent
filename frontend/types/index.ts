@@ -3,6 +3,7 @@ export type SSEEventType =
   | "token"
   | "citation"
   | "sql"
+  | "sql_results"
   | "done"
   | "error"
 
@@ -13,6 +14,7 @@ export interface SSEEvent {
   source?: string
   query?: string
   message?: string
+  results? : Record<string, unknown>[]
 }
 
 export type ToolName = "search_documents" | "query_orders"
@@ -34,6 +36,7 @@ export interface Message {
   citations?: Citation[]
   sqlQueries?: string[]
   isStreaming?: boolean
+  sqlResults? : Record<string, unknown>[]
 }
 
 export interface ChatRequest {

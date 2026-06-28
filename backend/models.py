@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List, Any
 
 class ChatMessage(BaseModel):
     role: str
@@ -16,3 +16,4 @@ class SSEEvent(BaseModel):
     source: Optional[str] = None
     query: Optional[str] = None
     message: Optional[str] = None
+    results: Optional[List[Any]] = None

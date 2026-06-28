@@ -100,6 +100,13 @@ export default function Home() {
             }))
           }
 
+          if (event.type === "sql_results" && event.results) {
+            updateLastMessage((msg) => ({
+              ...msg,
+              sqlResults: event.results,
+            }))
+          }
+
           if (event.type === "token" && event.content) {
             updateLastMessage((msg) => ({
               ...msg,

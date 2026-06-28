@@ -1,9 +1,27 @@
+"use client"
+
 import { Message } from "@/types"
 import ThinkingSteps from "./ThinkingSteps"
 import { stripInlineSource, extractAllSources } from "@/lib/stream"
 
 interface Props {
   message: Message
+}
+
+function downloadCSV(results: Record<string, unknown>[]) {
+  if (!results || results.length === 0) return
+  const headers = Object.keys(results[0])
+  const rows = results.map((row) =>
+    headers.map((h) => JSON.stringify(row[h] ?? "")).join(",")
+  )
+  const csv = [headers.join(","), ...rows].join("\n")
+  const blob = new Blob([csv], { type: "text/csv" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = "results.csv"
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 export default function MessageBubble({ message }: Props) {
@@ -21,6 +39,9 @@ export default function MessageBubble({ message }: Props) {
   const cleanContent = message.isStreaming
     ? message.content
     : stripInlineSource(message.content)
+
+  const hasTable = message.sqlResults && message.sqlResults.length > 0
+  const tableHeaders = hasTable ? Object.keys(message.sqlResults![0]) : []
 
   return (
     <div className="flex flex-col items-start max-w-[85%]">
@@ -47,6 +68,56 @@ export default function MessageBubble({ message }: Props) {
           </span>
         )}
       </div>
+
+      {hasTable && (
+        <div className="mt-3 w-full">
+          <div className="flex items-center justify-between mb-1.5 px-1">
+            <span className="text-[11px] text-[#8A8090]">
+              {message.sqlResults!.length} rows returned
+            </span>
+            <button
+              onClick={() => downloadCSV(message.sqlResults!)}
+              className="flex items-center gap-1.5 text-[11px] text-[#9B7FA6] hover:text-[#7A5F82] transition-colors"
+            >
+              <i className="ti ti-download text-[13px]" aria-hidden="true" />
+              Download CSV
+            </button>
+          </div>
+          <div className="overflow-x-auto rounded-[8px] border border-[#DDD8D8]">
+            <table className="w-full text-[11px] border-collapse">
+              <thead>
+                <tr className="bg-[#F3EDF5]">
+                  {tableHeaders.map((h) => (
+                    <th
+                      key={h}
+                      className="text-left px-3 py-2 text-[#5B3F6B] font-medium border-b border-[#DDD8D8] whitespace-nowrap"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {message.sqlResults!.map((row, i) => (
+                  <tr
+                    key={i}
+                    className={i % 2 === 0 ? "bg-white" : "bg-[#FAF8F7]"}
+                  >
+                    {tableHeaders.map((h) => (
+                      <td
+                        key={h}
+                        className="px-3 py-2 text-[#1A1520] border-b border-[#DDD8D8] whitespace-nowrap"
+                      >
+                        {String(row[h] ?? "")}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center gap-2 mt-1.5 px-1">
         {sources.map((source, i) => (

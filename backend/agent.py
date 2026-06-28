@@ -64,7 +64,11 @@ def run_tool(name: str, arguments: dict) -> tuple[str, dict]:
     if name == "query_orders":
         result = query_orders(arguments["question"])
         context = json.dumps(result["results"], indent=2)
-        return context, {"sql": result["sql"], "error": result.get("error")}
+        return context, {
+            "sql": result["sql"],
+            "results": result["results"],
+            "error": result.get("error")
+        }
 
     return "Tool not found.", {}
 
@@ -76,7 +80,7 @@ def run_agent(question: str, messages: list[dict]) -> Generator[dict, None, None
         {"role": "user", "content": question},
     ]
 
-    max_iterations = 2
+    max_iterations = 4
     iteration = 0
 
     while iteration < max_iterations:
@@ -115,6 +119,8 @@ def run_agent(question: str, messages: list[dict]) -> Generator[dict, None, None
             if name == "query_orders" and metadata.get("sql"):
                 logger.info(f"SQL | {metadata['sql']}")
                 yield {"type": "sql", "query": metadata["sql"]}
+                if metadata.get("results"):
+                    yield {"type": "sql_results", "results": metadata["results"]}
 
             conversation.append({
                 "role": "tool",
